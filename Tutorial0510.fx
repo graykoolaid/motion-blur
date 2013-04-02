@@ -11,6 +11,7 @@ Texture2D txDiffuse0;
 Texture2D txDiffuse1;
 Texture2D shadowMap;
 Texture2D renderTargetMap;
+Texture2D velocityMap;
 
 
 Texture2D shaderTextures[20];
@@ -205,12 +206,6 @@ float ShadowMapPS( PS_INPUT input ) : SV_Depth
 }
 
 
-
-
-
-
-
-
 PS_INPUT ViewWindowVS( VS_INPUT input )
 {
 	PS_INPUT output = (PS_INPUT)0;
@@ -244,10 +239,10 @@ float4 ViewWindowPS( PS_INPUT input) : SV_Target
 	//return float4( shadow, shadow, shadow, 1.0 );
 	float2 texCoords = input.Tex;
 	// Get the depth buffer value at this pixel.  
-	float zOverW = shadowMap.Sample(pointSampler, input.lpos.xy).r;  
+	float zOverW = velocityMap.Sample(pointSampler, input.Tex).r;  
 	// H is the viewport position at this pixel in the range -1 to 1.  
-	//float4 H = float4(input.Tex.x * 2 - 1, (1 - input.Tex.y) * 2 - 1,  zOverW, 1);  
-	float4 H = float4(input.Tex.x , (1 - input.Tex.y) ,  zOverW, 1);  
+	float4 H = float4(input.Tex.x * 2 - 1, (1 - input.Tex.y) * 2 - 1,  zOverW, 1);  
+	//float4 H = float4(input.Tex.x , (1 - input.Tex.y) ,  zOverW, 1);  
 	// Transform by the view-projection inverse.  
 	float4 D = mul(H, viewInvProj);  
 	// Divide by w to get the world position.  
@@ -302,6 +297,17 @@ technique10 Render
 
 //--------------------------------------------------------------------------------------
 technique10 RenderShadowMap
+{
+    pass P0
+    {
+       // SetVertexShader( CompileShader( vs_4_0, ShadowMapVS() ) );
+        SetVertexShader( CompileShader( vs_4_0, ShadowMapVS() ) );
+        SetGeometryShader( NULL );
+        SetPixelShader( NULL );
+    }
+}
+
+technique10 RenderVelocityMap
 {
     pass P0
     {

@@ -82,6 +82,7 @@ ID3D10DepthStencilView*     g_pDepthStencilView = NULL;
 ID3D10Effect*               g_pEffect = NULL;
 ID3D10EffectTechnique*      g_pTechnique = NULL;
 ID3D10EffectTechnique*      g_pShadowMapTechnique = NULL;
+ID3D10EffectTechnique*      g_pVelocityMapTechnique = NULL;
 ID3D10EffectTechnique*      g_pViewWindowTechnique = NULL;
 ID3D10InputLayout*          g_pVertexLayout = NULL;
 ID3D10Buffer*               g_pVertexBuffer = NULL;
@@ -111,6 +112,7 @@ ID3D10EffectShaderResourceVariable* g_pDiffuseVariable = NULL;
 ID3D10EffectShaderResourceVariable* g_pDiffuseVariable2 = NULL;
 ID3D10EffectShaderResourceVariable* g_pShadowMapVariable = NULL;
 ID3D10EffectShaderResourceVariable* g_pRenderTargetVariable = NULL;
+ID3D10EffectShaderResourceVariable* g_pVelocityMapVariable = NULL;
 ID3D10EffectShaderResourceVariable* m_textureArrayPtr;
 
 
@@ -680,6 +682,10 @@ HRESULT InitDevice()
 	// Shadow Map technique
 	g_pShadowMapTechnique = g_pEffect->GetTechniqueByName( "RenderShadowMap" );
 
+	// Velocity map technique
+	g_pVelocityMapTechnique = g_pEffect->GetTechniqueByName( "RenderVelocityMap" );
+
+	// Final window for post process effects and whatnot
 	g_pViewWindowTechnique = g_pEffect->GetTechniqueByName( "RenderViewWindow" );
 
 	// Obtain the variables
@@ -703,6 +709,7 @@ HRESULT InitDevice()
     g_pDiffuseVariable2			= g_pEffect->GetVariableByName( "txDiffuse1" )->AsShaderResource();
 	g_pShadowMapVariable		= g_pEffect->GetVariableByName( "shadowMap" )->AsShaderResource();
 	g_pRenderTargetVariable		= g_pEffect->GetVariableByName( "renderTargetMap" )->AsShaderResource();
+	g_pVelocityMapVariable		= g_pEffect->GetVariableByName( "velocityMap" )->AsShaderResource();
 	m_textureArrayPtr			= g_pEffect->GetVariableByName( "shaderTextures" )->AsShaderResource();
 	
 
@@ -1032,7 +1039,7 @@ void DrawScene()
 	}
 
 	// 1st Cube: Rotate around the origin
-	//D3DXMatrixRotationY( &g_World1, t/2.0 );
+	D3DXMatrixRotationY( &g_World1, t/2.0 );
 
 	// Clear the back buffer
 	//
@@ -1130,10 +1137,25 @@ void DrawSceneShadowMap()
 	//	g_pd3dDevice->Draw(	terrain.vertices.size(), 0 );
 	//}
 
-	//
+	
 	// Present our back buffer to our front buffer
-	//
-//	g_pSwapChain->Present( 0, 0 );
+	
+	//g_pSwapChain->Present( 0, 0 );
+}
+
+void DrawSceneVelocityMap()
+{
+		g_pd3dDevice->ClearRenderTargetView( g_pRenderTargetView, COLOR );
+	g_pd3dDevice->ClearDepthStencilView( g_pDepthStencilView, D3D10_CLEAR_DEPTH, 1.0f, 0 );
+
+	g_pd3dDevice->IASetVertexBuffers( 0, 1, &characters[characterIndex].vertexBuffer, &stride, &offset );
+	D3D10_TECHNIQUE_DESC techDesc;
+	g_pVelocityMapTechnique->GetDesc( &techDesc );
+	for( UINT p = 0; p < techDesc.Passes; ++p )
+	{
+		g_pVelocityMapTechnique->GetPassByIndex( p )->Apply( 0 );
+		g_pd3dDevice->Draw(	characters[characterIndex].vertices.size(), 0 );
+	}
 }
 
 void DrawSceneViewWindow()
@@ -1210,9 +1232,16 @@ void Render()
 	DrawSceneShadowMap();
 
 	g_pShadowMapVariable->SetResource( pShadowMapSRView );
+
 	g_pd3dDevice->OMSetRenderTargets( 1, &pRenderTargetView, g_pDepthStencilView );
 	g_pd3dDevice->ClearDepthStencilView( g_pDepthStencilView, D3D10_CLEAR_DEPTH, 1.0f, 0 );
 	DrawScene();
+
+	g_pd3dDevice->OMSetRenderTargets( 0, 0, pShadowMapDepthView );
+	g_pd3dDevice->ClearDepthStencilView( pShadowMapDepthView, D3D10_CLEAR_DEPTH, 1.0f, 0 );
+	DrawSceneVelocityMap();
+
+	g_pVelocityMapVariable->SetResource( pShadowMapSRView );
 
 	g_pd3dDevice->OMSetRenderTargets( 1, &g_pRenderTargetView, g_pDepthStencilView );
 	g_pd3dDevice->ClearDepthStencilView( g_pDepthStencilView, D3D10_CLEAR_DEPTH, 1.0f, 0 );
@@ -1221,6 +1250,26 @@ void Render()
 	g_pRenderTargetVariable->SetResource( pRenderTargetSRView );
 	g_pShadowMapVariable->SetResource( 0 );
 
-	g_ViewPrev = g_View;
+	//g_ViewPrev = g_View;
+
+	g_ViewPrev._11 = g_View._11;
+	g_ViewPrev._12 = g_View._12;
+	g_ViewPrev._13 = g_View._13;
+	g_ViewPrev._14 = g_View._14;
+
+	g_ViewPrev._21 = g_View._21;
+	g_ViewPrev._22 = g_View._22;
+	g_ViewPrev._23 = g_View._23;
+	g_ViewPrev._24 = g_View._24;
+
+	g_ViewPrev._31 = g_View._31;
+	g_ViewPrev._32 = g_View._32;
+	g_ViewPrev._33 = g_View._33;
+	g_ViewPrev._34 = g_View._34;
+
+	g_ViewPrev._41 = g_View._41;
+	g_ViewPrev._42 = g_View._42;
+	g_ViewPrev._43 = g_View._43;
+	g_ViewPrev._44 = g_View._44;
 }
 
