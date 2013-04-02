@@ -918,6 +918,16 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 				Cam.at.z = Cam.at.z - moveUnit;
 				camfunc();
 				break;
+			case 'Q':
+				Cam.eye.x = Cam.eye.x - moveUnit;
+				Cam.at.x = Cam.at.x - moveUnit;
+				camfunc();
+				break;
+			case 'E':
+				Cam.eye.x = Cam.eye.x + moveUnit;
+				Cam.at.x = Cam.at.x + moveUnit;
+				camfunc();
+				break;
 			case 'L':
 				raster.FillMode = D3D10_FILL_WIREFRAME;
 				g_pd3dDevice->CreateRasterizerState (&raster, &pState);
@@ -1022,7 +1032,7 @@ void DrawScene()
 	}
 
 	// 1st Cube: Rotate around the origin
-	D3DXMatrixRotationY( &g_World1, t/2.0 );
+	//D3DXMatrixRotationY( &g_World1, t/2.0 );
 
 	// Clear the back buffer
 	//

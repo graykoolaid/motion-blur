@@ -79,8 +79,6 @@ struct PS_INPUT
 	int TexNum      : TEXNUM;
 	float4 lpos		: TEXCOORD1;
 	float4 wpos		: TEXCOORD2;
-	float4x4 ViewProjInvMat : VIEWPROJINVMAT;
-	float4x4 ViewPrevProjInvMat : VIEWPREVPROJINVMAT;
 };
 
 
@@ -226,7 +224,7 @@ PS_INPUT ViewWindowVS( VS_INPUT input )
     output.Tex.y    = -input.Tex.y ;
 	output.TexNum = input.TexNum;
 
-	output.lpos = mul( mul(input.Pos, World), mul(lightView,Projection)  );
+	output.lpos = mul( mul(input.Pos, World), mul(View,Projection)  );
 	//output.lpos = mul( mul(input.Pos, World), lightViewProj  );
 	//output.lpos = mul( output.Pos, mul(View,lightViewProj)  );
 	//output.lpos = mul( output.Pos, lightViewProj );
@@ -242,10 +240,11 @@ PS_INPUT ViewWindowVS( VS_INPUT input )
 
 float4 ViewWindowPS( PS_INPUT input) : SV_Target
 {
-
+	float shadow = SHADOW_VAL( input );
+	//return float4( shadow, shadow, shadow, 1.0 );
+	float2 texCoords = input.Tex;
 	// Get the depth buffer value at this pixel.  
 	float zOverW = shadowMap.Sample(pointSampler, input.lpos.xy).r;  
-	
 	// H is the viewport position at this pixel in the range -1 to 1.  
 	//float4 H = float4(input.Tex.x * 2 - 1, (1 - input.Tex.y) * 2 - 1,  zOverW, 1);  
 	float4 H = float4(input.Tex.x , (1 - input.Tex.y) ,  zOverW, 1);  
@@ -263,16 +262,16 @@ float4 ViewWindowPS( PS_INPUT input) : SV_Target
 	previousPos /= previousPos.w;  
 	// Use this frame's position and last frame's to compute the pixel  
 	// velocity.  
-	float2 velocity = (currentPos - previousPos)/2.f;  
+	float2 velocity = (currentPos - previousPos)/2.f/1000.f;  
 
 	// Get the initial color at this pixel.  
-	float4 color = renderTargetMap.Sample( samLinear, input.Tex );  
-	input.Tex += velocity;  
+	float4 color = renderTargetMap.Sample( samLinear, texCoords );  
+	texCoords += velocity;  
 	//for(int i = 1; i < g_numSamples; ++i, input.Tex += velocity)  
-	for(int i = 1; i < 1; ++i, input.Tex += velocity)  
+	for(int i = 1; i < 10; ++i, texCoords += velocity)  
 	{  
 		// Sample the color buffer along the velocity vector.  
-		float4 currentColor = renderTargetMap.Sample( samLinear, input.Tex ); 
+		float4 currentColor = renderTargetMap.Sample( samLinear, texCoords ); 
 		// Add the current color to our color sum.  
 		color += currentColor;  
 	}  
@@ -281,8 +280,8 @@ float4 ViewWindowPS( PS_INPUT input) : SV_Target
 	float4 finalColor = color / 10; 
 	return finalColor;
 
-	return renderTargetMap.Sample( samLinear, input.Tex );
-	float shadow = SHADOW_VAL( input );
+	//return renderTargetMap.Sample( samLinear, input.Tex );
+//	float shadow = SHADOW_VAL( input );
 	return float4( shadow, shadow, shadow, 1.0 );
 	return float4(1.0,1.0,0.0,1.0);
 }
