@@ -22,7 +22,6 @@ int texSelect;
 //--------------------------------------------------------------------------------------
 cbuffer cbNeverChanges
 {
-	matrix View;
 };
     
 cbuffer cbChangeOnResize
@@ -37,12 +36,14 @@ cbuffer cbChangesEveryFrame
 	float4 vLightColor[10];
 	float4 vOutputColor;
 	int		texSelectIndex;
+	matrix View;
 
 	float4x4 lightViewProj;
 	float4x4 lightView;
 
 	matrix viewInvProj;
 	matrix viewPrevInvProj;
+	matrix ViewPrev;
 };
 
 
@@ -262,20 +263,21 @@ float4 ViewWindowPS( PS_INPUT input) : SV_Target
 	float4 currentPos = H;  
 	// Use the world position, and transform by the previous view-  
 	// projection matrix.  
-	float4 previousPos = mul(worldPos, viewPrevInvProj);  
+//	float4 previousPos = mul(worldPos, viewPrevInvProj);  
+	float4 previousPos = mul(worldPos, mul(ViewPrev, Projection) );  
 	//float4 previousPos = mul(H, viewPrevInvProj);  
 	// Convert to nonhomogeneous points [-1,1] by dividing by w.  
 	previousPos /= previousPos.w;  
 	// Use this frame's position and last frame's to compute the pixel  
 	// velocity.  
-	float2 velocity = (currentPos.xy - previousPos.xy)/1000.f;  
+	float2 velocity = (currentPos.xy - previousPos.xy)/2.f;  
 	//float2 velocity = (viewInvProj - viewPrevInvProj)/1000.f;  
 
 	// Get the initial color at this pixel.  
 	float4 color = renderTargetMap.Sample( samLinear, texCoords );  
 	texCoords += velocity;  
 	//for(int i = 1; i < g_numSamples; ++i, input.Tex += velocity)  
-	for(int i = 1; i < 10; ++i, texCoords += velocity)  
+	for(int i = 1; i < 1000; ++i, texCoords += velocity)  
 	{  
 		// Sample the color buffer along the velocity vector.  
 		float4 currentColor = renderTargetMap.Sample( samLinear, texCoords ); 
@@ -284,7 +286,7 @@ float4 ViewWindowPS( PS_INPUT input) : SV_Target
 	}  
 	// Average all of the samples to get the final blur color.  
 	//float4 finalColor = color / numSamples;  
-	float4 finalColor = color / 5; 
+	float4 finalColor = color / 500; 
 	return finalColor;
 }
 

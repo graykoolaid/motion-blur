@@ -1175,13 +1175,13 @@ void DrawSceneViewWindow()
 	D3DXMATRIX viewPrevInvProj;
 	D3DXMATRIX viewInvProj;
 	D3DXMatrixMultiply( &viewPrevInvProj, &g_ViewPrev, &g_Projection );
-	D3DXMatrixMultiply( &viewInvProj, &g_ViewPrev, &g_Projection );
+	D3DXMatrixMultiply( &viewInvProj, &g_View, &g_Projection );
 
 	D3DXMatrixInverse( &viewPrevInvProj, NULL, &viewPrevInvProj );
 	D3DXMatrixInverse( &viewInvProj, NULL, &viewInvProj );
 
-	g_pviewInvProjMatrix->SetMatrix( ( float* )&viewPrevInvProj );
-	g_pviewPrevInvProjMatrix->SetMatrix( ( float* )&viewInvProj );
+	g_pviewInvProjMatrix->SetMatrix( ( float* )&viewInvProj );
+	g_pviewPrevInvProjMatrix->SetMatrix( ( float* )&viewPrevInvProj );
 
 
 	//
@@ -1252,24 +1252,6 @@ void Render()
 
 	g_ViewPrev = g_View;
 
-	//g_ViewPrev._11 = g_View._11;
-	//g_ViewPrev._12 = g_View._12;
-	//g_ViewPrev._13 = g_View._13;
-	//g_ViewPrev._14 = g_View._14;
 
-	//g_ViewPrev._21 = g_View._21;
-	//g_ViewPrev._22 = g_View._22;
-	//g_ViewPrev._23 = g_View._23;
-	//g_ViewPrev._24 = g_View._24;
-
-	//g_ViewPrev._31 = g_View._31;
-	//g_ViewPrev._32 = g_View._32;
-	//g_ViewPrev._33 = g_View._33;
-	//g_ViewPrev._34 = g_View._34;
-
-	//g_ViewPrev._41 = g_View._41;
-	//g_ViewPrev._42 = g_View._42;
-	//g_ViewPrev._43 = g_View._43;
-	//g_ViewPrev._44 = g_View._44;
 }
 
