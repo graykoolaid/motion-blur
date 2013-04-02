@@ -62,6 +62,12 @@ SamplerState pointSampler
 	AddressV = MIRROR;
 };
 
+SamplerState clampSampler
+{
+	Filter = MIN_MAG_MIP_POINT;
+	AddressU = CLAMP;
+	AddressV = CLAMP;
+};
 
 //--------------------------------------------------------------------------------------
 struct VS_INPUT
@@ -169,7 +175,7 @@ float4 PS( PS_INPUT input) : SV_Target
 		}
 	}
 
-	clip( textureFinal.a - .9f );
+	//clip( textureFinal.a - .9f );
 
 
 	float shadow = SHADOW_VAL( input );
@@ -235,14 +241,18 @@ PS_INPUT ViewWindowVS( VS_INPUT input )
 
 float4 ViewWindowPS( PS_INPUT input) : SV_Target
 {
+	// Debug Values Shows either the render texture or the velocity map
 	float shadow = SHADOW_VAL( input );
 	//return float4( shadow, shadow, shadow, 1.0 );
+	//return renderTargetMap.Sample( samLinear, input.Tex );
+
+
 	float2 texCoords = input.Tex;
 	// Get the depth buffer value at this pixel.  
-	float zOverW = velocityMap.Sample(pointSampler, input.Tex).r;  
+	float zOverW = velocityMap.Sample(samLinear, input.Tex).r;  
 	// H is the viewport position at this pixel in the range -1 to 1.  
-	float4 H = float4(input.Tex.x * 2 - 1, (1 - input.Tex.y) * 2 - 1,  zOverW, 1);  
-	//float4 H = float4(input.Tex.x , (1 - input.Tex.y) ,  zOverW, 1);  
+	//float4 H = float4(input.Tex.x * 2 - 1, (1 - input.Tex.y) * 2 - 1,  zOverW, 1);  
+	float4 H = float4(input.Tex.x , (1 - input.Tex.y) ,  zOverW, 1);  
 	// Transform by the view-projection inverse.  
 	float4 D = mul(H, viewInvProj);  
 	// Divide by w to get the world position.  
@@ -253,11 +263,13 @@ float4 ViewWindowPS( PS_INPUT input) : SV_Target
 	// Use the world position, and transform by the previous view-  
 	// projection matrix.  
 	float4 previousPos = mul(worldPos, viewPrevInvProj);  
+	//float4 previousPos = mul(H, viewPrevInvProj);  
 	// Convert to nonhomogeneous points [-1,1] by dividing by w.  
 	previousPos /= previousPos.w;  
 	// Use this frame's position and last frame's to compute the pixel  
 	// velocity.  
-	float2 velocity = (currentPos - previousPos)/2.f/1000.f;  
+	float2 velocity = (currentPos.xy - previousPos.xy)/1000.f;  
+	//float2 velocity = (viewInvProj - viewPrevInvProj)/1000.f;  
 
 	// Get the initial color at this pixel.  
 	float4 color = renderTargetMap.Sample( samLinear, texCoords );  
@@ -272,13 +284,8 @@ float4 ViewWindowPS( PS_INPUT input) : SV_Target
 	}  
 	// Average all of the samples to get the final blur color.  
 	//float4 finalColor = color / numSamples;  
-	float4 finalColor = color / 10; 
+	float4 finalColor = color / 5; 
 	return finalColor;
-
-	//return renderTargetMap.Sample( samLinear, input.Tex );
-//	float shadow = SHADOW_VAL( input );
-	return float4( shadow, shadow, shadow, 1.0 );
-	return float4(1.0,1.0,0.0,1.0);
 }
 
 
