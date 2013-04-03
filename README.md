@@ -1,6 +1,7 @@
 motion-blur
 ===========
-Looks like its working, need to test spinning objects
+Works with camera movement
+Needs to work with per object movement
 
 Sample uses
   W
