@@ -56,7 +56,7 @@ int gHeight;
 int texdex = -1;
 int characterIndex = -1;
 
-float moveUnit = .25;
+float moveUnit = .01;
 
 UINT stride = sizeof( Vertex );
 UINT offset = 0;
@@ -136,8 +136,17 @@ D3DXMATRIX								lightView;
 ID3D10EffectMatrixVariable*				g_pLightViewProjMatrix = NULL;
 ID3D10EffectMatrixVariable*				g_pLightViewVariable = NULL;
 
-
 //-----
+
+
+bool a_down = false;
+bool s_down = false;
+int q_down = false;
+int q_up = false;
+bool w_down = false;
+int e_down = false;
+bool d_down = false;
+
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
@@ -307,21 +316,21 @@ void createPlane()
 	{	
 		for( int j = -100; j < 100; j++ )
 		{
-				vertices.push_back( D3DXVECTOR3( (float)i, -0.01, (float)j ) );
-				vertices.push_back( D3DXVECTOR3( (float)i, -0.01, (float)j+1. ) );
-				vertices.push_back( D3DXVECTOR3( (float)i+1., -0.01, (float)j ) );
-				
-				vertices.push_back( D3DXVECTOR3( (float)i, -0.01, (float)j+1. ) );
-				vertices.push_back( D3DXVECTOR3( (float)i+1., -0.01, (float)j+1. ) );
-				vertices.push_back( D3DXVECTOR3( (float)i+1., -0.01, (float)j ) );
+			vertices.push_back( D3DXVECTOR3( (float)i, -0.01, (float)j ) );
+			vertices.push_back( D3DXVECTOR3( (float)i, -0.01, (float)j+1. ) );
+			vertices.push_back( D3DXVECTOR3( (float)i+1., -0.01, (float)j ) );
 
-				texes.push_back( D3DXVECTOR2( ((float)i+100.)/200., ((float)j+100.)/200. ) );
-				texes.push_back( D3DXVECTOR2( ((float)i+1+100.)/200., ((float)j+100.)/200. ) );
-				texes.push_back( D3DXVECTOR2( ((float)i+100.)/200., ((float)j+1+100.)/200. ) );
+			vertices.push_back( D3DXVECTOR3( (float)i, -0.01, (float)j+1. ) );
+			vertices.push_back( D3DXVECTOR3( (float)i+1., -0.01, (float)j+1. ) );
+			vertices.push_back( D3DXVECTOR3( (float)i+1., -0.01, (float)j ) );
 
-				texes.push_back( D3DXVECTOR2( ((float)i+100.)/200., ((float)j+1+100.)/200. ) );
-				texes.push_back( D3DXVECTOR2( ((float)i+1+100.)/200., ((float)j+1+100.)/200. ) );
-				texes.push_back( D3DXVECTOR2( ((float)i+1+100.)/200., ((float)j+100.)/200. ) );
+			texes.push_back( D3DXVECTOR2( ((float)i+100.)/200., ((float)j+100.)/200. ) );
+			texes.push_back( D3DXVECTOR2( ((float)i+1+100.)/200., ((float)j+100.)/200. ) );
+			texes.push_back( D3DXVECTOR2( ((float)i+100.)/200., ((float)j+1+100.)/200. ) );
+
+			texes.push_back( D3DXVECTOR2( ((float)i+100.)/200., ((float)j+1+100.)/200. ) );
+			texes.push_back( D3DXVECTOR2( ((float)i+1+100.)/200., ((float)j+1+100.)/200. ) );
+			texes.push_back( D3DXVECTOR2( ((float)i+1+100.)/200., ((float)j+100.)/200. ) );
 		}
 	}
 
@@ -392,16 +401,16 @@ void charLoad( char* filename, vector<const wchar_t *> *textures )
 
 	indices_vec.resize(0);
 	vertices_vec.resize(0);
-	
+
 	Object tempO;
 	characters.push_back( tempO );
 	characterIndex = characters.size() - 1;
 	tempTexCount = Import( filename, &characters[characterIndex].vertices );
 
 	//characters[characterIndex].vertices = verts[0];
-	
-//	tempO.indices = indexices;
-//	tempO.vertices  = tempO;
+
+	//	tempO.indices = indexices;
+	//	tempO.vertices  = tempO;
 
 	// Load the Vertex Buffer
 	D3D10_BUFFER_DESC bd;
@@ -433,14 +442,14 @@ void charLoad( char* filename, vector<const wchar_t *> *textures )
 	//	return;
 
 	// Save the Index Buffer for easy access
-//	characters[characterIndex].indexBuffer = g_pIndexBuffer;
+	//	characters[characterIndex].indexBuffer = g_pIndexBuffer;
 
 	for( int i = 0; i < textures->size(); i++ )
 	{
 		hr = D3DX10CreateShaderResourceViewFromFile( g_pd3dDevice, textures[0][i], NULL, NULL, &g_pTextureRV, NULL );
 		characters[characterIndex].texArray.push_back( g_pTextureRV );
 	}
-	
+
 	characters[characterIndex].numMeshes = 1;//tempTexCount;
 
 	textures->resize(0);
@@ -646,8 +655,6 @@ HRESULT InitDevice()
 
 
 
-
-
 	// Setup the viewport
 	D3D10_VIEWPORT vp;
 	vp.Width = width;
@@ -704,14 +711,14 @@ HRESULT InitDevice()
 	g_pOutputColorVariable		= g_pEffect->GetVariableByName( "vOutputColor" )->AsVector();
 
 	g_ptextureSelectVariable	= g_pEffect->GetVariableByName("texSelect")->AsScalar();
-    
+
 	g_pDiffuseVariable			= g_pEffect->GetVariableByName( "txDiffuse0" )->AsShaderResource();
-    g_pDiffuseVariable2			= g_pEffect->GetVariableByName( "txDiffuse1" )->AsShaderResource();
+	g_pDiffuseVariable2			= g_pEffect->GetVariableByName( "txDiffuse1" )->AsShaderResource();
 	g_pShadowMapVariable		= g_pEffect->GetVariableByName( "shadowMap" )->AsShaderResource();
 	g_pRenderTargetVariable		= g_pEffect->GetVariableByName( "renderTargetMap" )->AsShaderResource();
 	g_pVelocityMapVariable		= g_pEffect->GetVariableByName( "velocityMap" )->AsShaderResource();
 	m_textureArrayPtr			= g_pEffect->GetVariableByName( "shaderTextures" )->AsShaderResource();
-	
+
 
 	// Define the input layout
 	D3D10_INPUT_ELEMENT_DESC layout[] =
@@ -750,7 +757,7 @@ HRESULT InitDevice()
 	//textures.push_back( L"Commando_DM.dds" );
 	//charLoad( "bigbadman.fbx", &textures );
 
-	
+
 	//textures.push_back( L"CommandoArmor_DM.dds" );
 	//textures.push_back( L"CommandoArmor_DM.dds" );
 	//charLoad( "bigbadman.fbx", &textures );
@@ -803,16 +810,16 @@ HRESULT InitDevice()
 	//vLightColor.push_back( D3DXVECTOR4( 1.0, 1.0, 1.0, 1.0 ) );
 
 
-		vLightDirs.push_back( D3DXVECTOR4( 0.0f, 0.0f, 1.0f, 1.0f ) );
+	vLightDirs.push_back( D3DXVECTOR4( 0.0f, 0.0f, 1.0f, 1.0f ) );
 	vLightColor.push_back( D3DXVECTOR4( 1.0, 1.0, 1.0, 1.0 ) );
 
 	vLightDirs.push_back( D3DXVECTOR4( 0.0f, 0.0f, -1.0f, 1.0f ) );
 	vLightColor.push_back( D3DXVECTOR4( 1.0, 1.0, 1.0, 1.0 ) );
 
 	/*-----------------------------------------------------------------------------------------------------------*/
-	
+
 	if( FAILED( hr ) )
-        return hr;
+		return hr;
 
 	// Initialize the world matrices
 	D3DXMatrixIdentity( &g_World1 );
@@ -901,40 +908,21 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 
 	switch( message )
 	{
+	case WM_KEYUP:
+		{
+			switch(wParam)
+			{
+			case 'Q': q_down = false; break;
+			case 'E': e_down = false; break;
+			default: break;
+			}
+		}
 	case WM_KEYDOWN:
 		{
 			switch(wParam)
 			{
-			case 'W':
-				Cam.eye.y = Cam.eye.y + moveUnit;
-				Cam.at.y = Cam.at.y + moveUnit;
-				camfunc();
-				break;
-			case 'S':
-				Cam.eye.y = Cam.eye.y - moveUnit;
-				Cam.at.y = Cam.at.y - moveUnit;
-				camfunc();
-				break;
-			case 'A':
-				Cam.eye.z = Cam.eye.z + moveUnit;
-				Cam.at.z = Cam.at.z + moveUnit;
-				camfunc();
-				break;
-			case 'D':
-				Cam.eye.z = Cam.eye.z - moveUnit;
-				Cam.at.z = Cam.at.z - moveUnit;
-				camfunc();
-				break;
-			case 'Q':
-				Cam.eye.x = Cam.eye.x - moveUnit;
-				Cam.at.x = Cam.at.x - moveUnit;
-				camfunc();
-				break;
-			case 'E':
-				Cam.eye.x = Cam.eye.x + moveUnit;
-				Cam.at.x = Cam.at.x + moveUnit;
-				camfunc();
-				break;
+			case 'Q': q_down = true; break;
+			case 'E': e_down = true; break;
 			case 'L':
 				raster.FillMode = D3D10_FILL_WIREFRAME;
 				g_pd3dDevice->CreateRasterizerState (&raster, &pState);
@@ -948,14 +936,14 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 			case VK_RIGHT:
 				// Right arrow pressed
 				// Set vertex buffer
-				
+
 				characterIndex++;
 				if( characterIndex == characters.size() )
 					characterIndex = 0;
 
 				g_pd3dDevice->IASetVertexBuffers( 0, 1, &characters[characterIndex].vertexBuffer, &stride, &offset );
 				// Set index buffer
-//				g_pd3dDevice->IASetIndexBuffer( characters[characterIndex].indexBuffer, DXGI_FORMAT_R32_UINT, 0 );
+				//				g_pd3dDevice->IASetIndexBuffer( characters[characterIndex].indexBuffer, DXGI_FORMAT_R32_UINT, 0 );
 				m_textureArrayPtr->SetResourceArray(&characters[characterIndex].texArray[0], 0, characters[characterIndex].texArray.size());
 
 				break;
@@ -967,7 +955,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 					characterIndex = characters.size() - 1;
 				g_pd3dDevice->IASetVertexBuffers( 0, 1, &characters[characterIndex].vertexBuffer, &stride, &offset );
 				// Set index buffer
-//				g_pd3dDevice->IASetIndexBuffer( characters[characterIndex].indexBuffer, DXGI_FORMAT_R32_UINT, 0 );
+				//				g_pd3dDevice->IASetIndexBuffer( characters[characterIndex].indexBuffer, DXGI_FORMAT_R32_UINT, 0 );
 				m_textureArrayPtr->SetResourceArray(&characters[characterIndex].texArray[0], 0, characters[characterIndex].texArray.size());
 				break;
 			case VK_UP:
@@ -1080,7 +1068,7 @@ void DrawScene()
 		g_pTechnique->GetPassByIndex( p )->Apply( 0 );
 		g_pd3dDevice->Draw(	characters[characterIndex].vertices.size(), 0 );
 	}
-	
+
 	// Draw Terrain
 	g_pd3dDevice->IASetVertexBuffers( 0, 1, &terrain.vertexBuffer, &stride, &offset );
 	g_pTechnique->GetDesc( &techDesc );
@@ -1090,15 +1078,15 @@ void DrawScene()
 		g_pd3dDevice->Draw(	terrain.vertices.size(), 0 );
 	}
 
-	//
-	// Present our back buffer to our front buffer
-	//
-//	g_pSwapChain->Present( 0, 0 );
+	
+	 //Present our back buffer to our front buffer
+	
+		//g_pSwapChain->Present( 0, 0 );
 }
 
 void DrawSceneShadowMap()
 {
-		g_pd3dDevice->ClearRenderTargetView( g_pRenderTargetView, COLOR );
+	g_pd3dDevice->ClearRenderTargetView( g_pRenderTargetView, COLOR );
 	g_pd3dDevice->ClearDepthStencilView( g_pDepthStencilView, D3D10_CLEAR_DEPTH, 1.0f, 0 );
 
 	//
@@ -1126,7 +1114,7 @@ void DrawSceneShadowMap()
 		g_pShadowMapTechnique->GetPassByIndex( p )->Apply( 0 );
 		g_pd3dDevice->Draw(	characters[characterIndex].vertices.size(), 0 );
 	}
-	
+
 
 	// Terrain Draw
 	//g_pd3dDevice->IASetVertexBuffers( 0, 1, &terrain.vertexBuffer, &stride, &offset );
@@ -1137,15 +1125,15 @@ void DrawSceneShadowMap()
 	//	g_pd3dDevice->Draw(	terrain.vertices.size(), 0 );
 	//}
 
-	
+
 	// Present our back buffer to our front buffer
-	
+
 	//g_pSwapChain->Present( 0, 0 );
 }
 
 void DrawSceneVelocityMap()
 {
-		g_pd3dDevice->ClearRenderTargetView( g_pRenderTargetView, COLOR );
+	g_pd3dDevice->ClearRenderTargetView( g_pRenderTargetView, COLOR );
 	g_pd3dDevice->ClearDepthStencilView( g_pDepthStencilView, D3D10_CLEAR_DEPTH, 1.0f, 0 );
 
 	g_pd3dDevice->IASetVertexBuffers( 0, 1, &characters[characterIndex].vertexBuffer, &stride, &offset );
@@ -1202,7 +1190,7 @@ void DrawSceneViewWindow()
 		g_pViewWindowTechnique->GetPassByIndex( p )->Apply( 0 );
 		g_pd3dDevice->Draw(	viewWindow.vertices.size(), 0 );
 	}
-	
+
 
 	// Terrain Draw
 	//g_pd3dDevice->IASetVertexBuffers( 0, 1, &terrain.vertexBuffer, &stride, &offset );
@@ -1222,6 +1210,36 @@ void DrawSceneViewWindow()
 
 void Render()
 {
+	if( GetAsyncKeyState('D') & 0x8000 )
+	{
+		Cam.eye.x = Cam.eye.x + moveUnit;
+		Cam.at.x = Cam.at.x   + moveUnit;
+	}
+	if( GetAsyncKeyState('A') & 0x8000 )
+	{
+		Cam.eye.x = Cam.eye.x - moveUnit;
+		Cam.at.x = Cam.at.x   - moveUnit;
+	}
+	if( GetAsyncKeyState('W') & 0x8000 )
+	{
+		Cam.eye.z = Cam.eye.z + moveUnit;
+		Cam.at.z = Cam.at.z   + moveUnit;
+	}
+	if( GetAsyncKeyState('S') & 0x8000 )
+	{
+		Cam.eye.z = Cam.eye.z - moveUnit;
+		Cam.at.z = Cam.at.z   - moveUnit;
+	}
+	if( GetAsyncKeyState('Q') & 0x8000 )
+	{
+		Cam.eye.y = Cam.eye.y + moveUnit;
+		Cam.at.y = Cam.at.y   + moveUnit;
+	}
+	if( GetAsyncKeyState('E') & 0x8000 )
+	{
+		Cam.eye.y = Cam.eye.y - moveUnit;
+		Cam.at.y = Cam.at.y   - moveUnit;
+	}
 	//Get all of the current camera data
 	camfunc();
 	//Get the light matrices for the shadow map
@@ -1254,4 +1272,3 @@ void Render()
 
 
 }
-

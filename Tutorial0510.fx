@@ -240,17 +240,36 @@ PS_INPUT ViewWindowVS( VS_INPUT input )
     return output;
 }
 
+
+
+
+float SHADOW_VAL2( PS_INPUT input)
+{
+ //re-homogenize position after interpolation
+    input.lpos.xyz /= input.lpos.w;
+ 
+    //transform clip space coords to texture space coords (-1:1 to 0:1)
+    input.lpos.x = input.lpos.x/2 + 0.5;
+    input.lpos.y = input.lpos.y/-2 + 0.5;
+ 
+    //sample shadow map - point sampler
+	float shadowMapDepth = velocityMap.Sample(pointSampler, input.lpos.xy).r;
+	return shadowMapDepth;
+}
+
+
+
 float4 ViewWindowPS( PS_INPUT input) : SV_Target
 {
 	// Debug Values Shows either the render texture or the velocity map
-	float shadow = SHADOW_VAL( input );
+	float shadow = SHADOW_VAL2( input );
 	//return float4( shadow, shadow, shadow, 1.0 );
 	//return renderTargetMap.Sample( samLinear, input.Tex );
-
-
 	float2 texCoords = input.Tex;
 	// Get the depth buffer value at this pixel.  
+	//float zOverW = velocityMap.Sample(pointSampler, float2(input.Tex.x, input.Tex.y) ).r;  
 	float zOverW = velocityMap.Sample(samLinear, input.Tex).r;  
+	//float zOverW = shadow;
 	// H is the viewport position at this pixel in the range -1 to 1.  
 	//float4 H = float4(input.Tex.x * 2 - 1, (1 - input.Tex.y) * 2 - 1,  zOverW, 1);  
 	float4 H = float4(input.Tex.x , (1 - input.Tex.y) ,  zOverW, 1);  
@@ -270,23 +289,26 @@ float4 ViewWindowPS( PS_INPUT input) : SV_Target
 	previousPos /= previousPos.w;  
 	// Use this frame's position and last frame's to compute the pixel  
 	// velocity.  
-	float2 velocity = (currentPos.xy - previousPos.xy)/2.f;  
+	//float2 velocity = (currentPos.xy - previousPos.xy)/2.f;  
+	float2 velocity = (-currentPos.xy + previousPos.xy)/2.f; 
+	velocity.y = -velocity.y;
 	//float2 velocity = (viewInvProj - viewPrevInvProj)/1000.f;  
 
 	// Get the initial color at this pixel.  
-	float4 color = renderTargetMap.Sample( samLinear, texCoords );  
+	float4 color = renderTargetMap.Sample( samLinear, float2(texCoords.x, -texCoords.y) );  
 	texCoords += velocity;  
 	//for(int i = 1; i < g_numSamples; ++i, input.Tex += velocity)  
-	for(int i = 1; i < 1000; ++i, texCoords += velocity)  
+	int samples = 100;
+	for(int i = 1; i < samples; ++i, texCoords += velocity)  
 	{  
 		// Sample the color buffer along the velocity vector.  
-		float4 currentColor = renderTargetMap.Sample( samLinear, texCoords ); 
+		float4 currentColor = renderTargetMap.Sample( samLinear, float2(texCoords.x, texCoords.y) ); 
 		// Add the current color to our color sum.  
 		color += currentColor;  
 	}  
 	// Average all of the samples to get the final blur color.  
 	//float4 finalColor = color / numSamples;  
-	float4 finalColor = color / 500; 
+	float4 finalColor = color / samples; 
 	return finalColor;
 }
 
@@ -323,6 +345,7 @@ technique10 RenderVelocityMap
        // SetVertexShader( CompileShader( vs_4_0, ShadowMapVS() ) );
         SetVertexShader( CompileShader( vs_4_0, VS() ) );
         SetGeometryShader( NULL );
+        SetPixelShader( CompileShader( ps_4_0, ShadowMapPS() ) );
         SetPixelShader( NULL );
     }
 }
