@@ -176,7 +176,7 @@ float4 PS( PS_INPUT input) : SV_Target
 		}
 	}
 
-	//clip( textureFinal.a - .9f );
+	clip( textureFinal.a - .9f );
 
 
 	float shadow = SHADOW_VAL( input );
@@ -206,10 +206,17 @@ PS_INPUT ShadowMapVS( VS_INPUT input )
     return output;
 }
 
-float ShadowMapPS( PS_INPUT input ) : SV_Depth
+void ShadowMapPS( PS_INPUT input ) //: SV_Depth
 {
-	float depth = input.Pos.z / input.Pos.w;
-	return depth;
+	//float depth = input.Pos.z / input.Pos.w;
+	//clip( shaderTextures[1].Sample( samLinear, input.Tex ) - .2);
+	for( int i = 0; i < 10; i++ )
+	{
+		if( i == input.TexNum )
+		{
+			clip( shaderTextures[i].Sample( samLinear, input.Tex ) - .3 );
+		}
+	}
 }
 
 
@@ -271,8 +278,8 @@ float4 ViewWindowPS( PS_INPUT input) : SV_Target
 	float zOverW = velocityMap.Sample(samLinear, input.Tex).r;  
 	//float zOverW = shadow;
 	// H is the viewport position at this pixel in the range -1 to 1.  
-	//float4 H = float4(input.Tex.x * 2 - 1, (1 - input.Tex.y) * 2 - 1,  zOverW, 1);  
-	float4 H = float4(input.Tex.x , (1 - input.Tex.y) ,  zOverW, 1);  
+	float4 H = float4(input.Tex.x * 2 - 1, (1 - input.Tex.y) * 2 - 1,  zOverW, 1);  
+	//float4 H = float4(input.Tex.x , (1 - input.Tex.y) ,  zOverW, 1);  
 	// Transform by the view-projection inverse.  
 	float4 D = mul(H, viewInvProj);  
 	// Divide by w to get the world position.  
@@ -289,16 +296,16 @@ float4 ViewWindowPS( PS_INPUT input) : SV_Target
 	previousPos /= previousPos.w;  
 	// Use this frame's position and last frame's to compute the pixel  
 	// velocity.  
-	//float2 velocity = (currentPos.xy - previousPos.xy)/2.f;  
-	float2 velocity = (-currentPos.xy + previousPos.xy)/2.f; 
-	velocity.y = -velocity.y;
+	float2 velocity = (currentPos.xy - previousPos.xy)/2.f/8;  
+	//float2 velocity = (-currentPos.xy + previousPos.xy)/2.f*10.; 
+	//velocity.y = -velocity.y;
 	//float2 velocity = (viewInvProj - viewPrevInvProj)/1000.f;  
 
 	// Get the initial color at this pixel.  
-	float4 color = renderTargetMap.Sample( samLinear, float2(texCoords.x, -texCoords.y) );  
+	float4 color = renderTargetMap.Sample( samLinear, float2(texCoords.x, texCoords.y) );  
 	texCoords += velocity;  
 	//for(int i = 1; i < g_numSamples; ++i, input.Tex += velocity)  
-	int samples = 100;
+	int samples = 5;
 	for(int i = 1; i < samples; ++i, texCoords += velocity)  
 	{  
 		// Sample the color buffer along the velocity vector.  
@@ -335,6 +342,8 @@ technique10 RenderShadowMap
         SetVertexShader( CompileShader( vs_4_0, ShadowMapVS() ) );
         SetGeometryShader( NULL );
         SetPixelShader( NULL );
+        SetPixelShader( CompileShader( ps_4_0, ShadowMapPS() ) );
+
     }
 }
 
@@ -346,7 +355,7 @@ technique10 RenderVelocityMap
         SetVertexShader( CompileShader( vs_4_0, VS() ) );
         SetGeometryShader( NULL );
         SetPixelShader( CompileShader( ps_4_0, ShadowMapPS() ) );
-        SetPixelShader( NULL );
+        //SetPixelShader( NULL );
     }
 }
 

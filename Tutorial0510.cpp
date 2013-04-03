@@ -56,7 +56,7 @@ int gHeight;
 int texdex = -1;
 int characterIndex = -1;
 
-float moveUnit = .01;
+float moveUnit = .1;
 
 UINT stride = sizeof( Vertex );
 UINT offset = 0;
@@ -1240,6 +1240,9 @@ void Render()
 		Cam.eye.y = Cam.eye.y - moveUnit;
 		Cam.at.y = Cam.at.y   - moveUnit;
 	}
+
+	m_textureArrayPtr->SetResourceArray(&characters[characterIndex].texArray[0], 0, characters[characterIndex].texArray.size());
+
 	//Get all of the current camera data
 	camfunc();
 	//Get the light matrices for the shadow map
